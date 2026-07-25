@@ -415,20 +415,15 @@ function BrainPanel({ age, childName }) {
     const ageLabel = age.months + " " + mWord(age.months);
     trackBrain();
     try {
-      const r = await fetch("https://api.anthropic.com/v1/messages", {
+       const r = await fetch("/api/bati-brain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: "Ты BATI — тёплый помощник для родителей. Отвечай как опытный педиатр, но просто и тепло. Ребёнку " + ageLabel + ", имя " + childName + ". Структура: 1) Спокойствие или тревога 2) Что делать конкретно 3) Когда к врачу если нужно. Максимум 100 слов. Русский язык.",
-          messages: [{ role: "user", content: question }],
-        }),
+        body: JSON.stringify({ question, childAgeText: ageLabel })
       });
       const d = await r.json();
-      setAnswer(d.content && d.content[0] ? d.content[0].text : "Попробуйте ещё раз 🙏");
+      setAnswer(d.answer || "Попробуйте ещё раз 💛");
     } catch (e) {
-      setAnswer("Что-то пошло не так. Попробуйте ещё раз 🙏");
+      setAnswer("Что-то пошло не так. Попробуйте ещё раз 💛");
     }
     setLoading(false);
   };
