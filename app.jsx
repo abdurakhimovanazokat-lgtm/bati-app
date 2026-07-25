@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+const { useState, useEffect } = React;
 
 const C = {
   navy: "#3D5478", navyDeep: "#2A3C57", navySoft: "#EBF0F7",
@@ -650,7 +650,7 @@ function Today({ user, onReset }) {
   );
 }
 
-export default function BatiApp() {
+ function BatiApp() {
   const [screen, setScreen] = useState("loading");
   const [user, setUser] = useState(null);
   useEffect(() => {
