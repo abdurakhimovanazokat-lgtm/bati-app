@@ -663,3 +663,5 @@ export default function BatiApp() {
   if (screen === "onboard") return <Onboarding onDone={u => { setUser(u); setScreen("today"); }} />;
   return <Today user={user} onReset={() => { localStorage.removeItem(KEY); setScreen("splash"); }} />;
 }
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<BatiApp />);
