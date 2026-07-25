@@ -11,7 +11,7 @@ export default async function handler(req, res) {
 
   const { question, childAgeText } = req.body || {};
 
-  if (!question  typeof question !== 'string'  question.trim().length === 0) {
+  if (!question || typeof question !== 'string' || question.trim().length === 0) {
     return res.status(400).json({ error: 'Вопрос не передан' });
   }
 
