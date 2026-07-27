@@ -1,4 +1,3 @@
-
 // api/bati-brain.js
 // Serverless-функция Vercel. Единственное место, где используется API-ключ.
 // Ключ никогда не попадает в браузер и никогда не пишется в код.
@@ -22,7 +21,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const materials = findRelevantMaterials(question.trim(), childAgeText);
+    const { cards, premiumBundle } = findRelevantMaterials(question.trim(), childAgeText, 2);
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -35,7 +34,7 @@ export default async function handler(req, res) {
         model: MODEL,
         max_tokens: MAX_TOKENS,
         system: buildSystemPrompt(),
-        messages: [{ role: 'user', content: buildUserMessage(question.trim(), childAgeText, materials) }]
+        messages: [{ role: 'user', content: buildUserMessage(question.trim(), childAgeText, cards, premiumBundle) }]
       })
     });
 
@@ -47,7 +46,7 @@ export default async function handler(req, res) {
     }
 
     const answer = data.content?.[0]?.text || 'Извините, не получилось сформировать ответ.';
-    return res.status(200).json({ answer, materials });
+    return res.status(200).json({ answer, cards, premiumBundle });
 
   } catch (err) {
     console.error('Server error:', err);
