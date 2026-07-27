@@ -448,19 +448,25 @@ function BrainPanel({ age, childName }) {
             <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") ask(); }} placeholder="Ваш вопрос…" style={{ flex: 1, padding: "11px 14px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 14, fontFamily: "inherit", outline: "none" }} />
             <button onClick={() => ask()} style={{ width: 40, height: 40, borderRadius: 10, border: "none", background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 16, cursor: "pointer", flexShrink: 0 }}>{loading ? "…" : "→"}</button>
           </div>
-          {(answer || loading) && (
+         {(answer || loading) && (
             <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 14, padding: "12px 14px" }}>
               {loading
                 ? <div style={{ display: "flex", gap: 4 }}>{[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.5)", animation: "bounce 1.2s ease-in-out " + (i * 0.2) + "s infinite" }} />)}</div>
-                : <div style={{ fontSize: 13, color: "rgba(255,255,255,0.9)", lineHeight: 1.65 }}>{answer}</div>
+                : (() => {
+                    const parsed = parseBrainAnswer(answer);
+                    return (
+                      <div>
+                        {parsed.segments.map((seg, i) => seg.type === "card"
+                          ? <BatiCard key={i} title={seg.title} desc={seg.desc} url={seg.url} />
+                          : <div key={i} style={{ fontSize: 13, color: "rgba(255,255,255,0.9)", lineHeight: 1.65, whiteSpace: "pre-line" }}>{renderInlineText(seg.content)}</div>
+                        )}
+                        {parsed.premium && <PremiumBundleCard title={parsed.premium.title} desc={parsed.premium.desc} url={parsed.premium.url} />}
+                      </div>
+                    );
+                  })()
               }
             </div>
           )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function Toast({ data, onClose }) {
   return (
