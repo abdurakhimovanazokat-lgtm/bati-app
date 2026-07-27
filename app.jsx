@@ -176,8 +176,8 @@ const CARDS_DB = {
 };
 
 function getCards(months) {
-  const day = new Date().getDay(); // 0=вс, 1=пн ... 6=сб
-  const idx = day; // индекс набора по дню недели
+  const day = new Date().getDay();
+  const idx = day;
 
   let key;
   if (months < 3) key = "0-3";
@@ -185,7 +185,6 @@ function getCards(months) {
   else if (months < 9) key = "6-9";
   else key = null;
 
-  // Для возрастов без недельных наборов — стандартные карточки
   if (!key) {
     if (months < 12) return [
       { id:"stand", num:1, icon:"🚶", tag:"Движение", time:"5 мин", title:"Готовимся к шагам", subtitle:"Строим уверенность, не скорость", why:"Стояние с опорой строит мышцы ног и вестибулярный аппарат. Важна уверенность — не торопитесь.", action:"Держите за обе руки у дивана. Пусть переносит вес с ноги на ногу. 5 минут.", tagColor:C.gold, tagBg:C.goldBg, doneLabel:"Упражнялись ✓", toast:{emoji:"🚶",h:"Первые шаги близко",s:"Ноги крепнут"} },
@@ -239,7 +238,6 @@ const ANALYTICS_KEY = "bati_analytics";
 const loadUser = () => { try { const r = localStorage.getItem(KEY); return r ? JSON.parse(r) : null; } catch { return null; } };
 const saveUser = (d) => { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch {} };
 
-// ── Analytics ─────────────────────────────────────────────
 const loadAnalytics = () => {
   try { const r = localStorage.getItem(ANALYTICS_KEY); return r ? JSON.parse(r) : { opens: [], cardsDone: [], brainQuestions: 0, sessions: 0 }; }
   catch { return { opens: [], cardsDone: [], brainQuestions: 0, sessions: 0 }; }
@@ -402,6 +400,83 @@ function Card({ card, done, open, onOpen, onDone }) {
   );
 }
 
+function parseBrainAnswer(text) {
+  if (!text) return { segments: [], premium: null };
+
+  let premium = null;
+  let rest = text;
+  const premiumMatch = text.match(/📚\s*Полный гид BATI:\s*([^\n]+)\n([\s\S]*?)🔒\s*Доступно в BATI Plus\s*\n?\s*\[Открыть BATI Plus\]\(([^\)]+)\)/);
+  if (premiumMatch) {
+    premium = {
+      title: premiumMatch[1].trim(),
+      desc: premiumMatch[2].trim(),
+      url: premiumMatch[3].trim()
+    };
+    rest = text.slice(0, premiumMatch.index) + text.slice(premiumMatch.index + premiumMatch[0].length);
+  }
+
+  const cardRe = /\[([^\]]+)\]\((\/[^\)]+)\)(\s*—\s*([^\[\n]+))?/g;
+  const segments = [];
+  let lastIndex = 0;
+  let m;
+  while ((m = cardRe.exec(rest)) !== null) {
+    if (m.index > lastIndex) {
+      segments.push({ type: "text", content: rest.slice(lastIndex, m.index) });
+    }
+    segments.push({ type: "card", title: m[1].trim(), url: m[2].trim(), desc: (m[4] || "").trim() });
+    lastIndex = cardRe.lastIndex;
+  }
+  if (lastIndex < rest.length) {
+    segments.push({ type: "text", content: rest.slice(lastIndex) });
+  }
+  return { segments, premium };
+}
+
+function renderInlineText(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g).filter(Boolean);
+  return parts.map((p, i) => {
+    if (p.startsWith("**") && p.endsWith("**")) {
+      return <strong key={i}>{p.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{p}</span>;
+  });
+}
+
+function BatiCard({ title, desc, url }) {
+  const [imgError, setImgError] = useState(false);
+  return (
+    <div style={{ background: "rgba(255,255,255,0.08)", borderRadius: 16, overflow: "hidden", margin: "10px 0", border: "1px solid rgba(255,255,255,0.15)" }}>
+      <div style={{ padding: "10px 14px 0", fontSize: 11, fontWeight: 700, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.06em" }}>📖 BATI Card</div>
+      {!imgError ? (
+        <img src={url} alt={title} onError={() => setImgError(true)} style={{ width: "100%", display: "block", marginTop: 8 }} />
+      ) : (
+        <div style={{ height: 80, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>📖</div>
+      )}
+      <div style={{ padding: "12px 14px 14px" }}>
+        <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 4 }}>{title}</div>
+        {desc && <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, marginBottom: 10 }}>{"✨ " + desc}</div>}
+        <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: "inline-block", fontSize: 13, fontWeight: 700, color: "#C9A96E", textDecoration: "none" }}>Открыть карточку →</a>
+      </div>
+    </div>
+  );
+}
+
+function PremiumBundleCard({ title, desc, url }) {
+  return (
+    <div style={{ background: "linear-gradient(135deg, #2A3C57, #3D5478)", borderRadius: 16, overflow: "hidden", margin: "10px 0", border: "1px solid rgba(201,169,110,0.4)" }}>
+      <div style={{ padding: "14px 16px 0", fontSize: 11, fontWeight: 700, color: "#C9A96E", textTransform: "uppercase", letterSpacing: "0.06em" }}>📚 Полный гид BATI</div>
+      <div style={{ padding: "8px 16px 14px" }}>
+        <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 16, fontWeight: 700, color: "#fff", marginBottom: 6 }}>{title}</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.5, marginBottom: 12 }}>{desc || "Внутри: все карточки, техники и рекомендации по теме."}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#C9A96E", background: "rgba(201,169,110,0.15)", padding: "4px 10px", borderRadius: 100 }}>🔒 BATI Plus</span>
+        </div>
+        <a href={url} target="_blank" rel="noopener noreferrer" style={{ display: "block", textAlign: "center", padding: "12px", borderRadius: 100, background: "#C9A96E", color: "#2A3C57", fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Открыть BATI Plus</a>
+      </div>
+    </div>
+  );
+}
+
 function BrainPanel({ age, childName }) {
   const [q, setQ] = useState("");
   const [answer, setAnswer] = useState("");
@@ -448,7 +523,7 @@ function BrainPanel({ age, childName }) {
             <input value={q} onChange={e => setQ(e.target.value)} onKeyDown={e => { if (e.key === "Enter") ask(); }} placeholder="Ваш вопрос…" style={{ flex: 1, padding: "11px 14px", borderRadius: 12, border: "1.5px solid rgba(255,255,255,0.2)", background: "rgba(255,255,255,0.08)", color: "#fff", fontSize: 14, fontFamily: "inherit", outline: "none" }} />
             <button onClick={() => ask()} style={{ width: 40, height: 40, borderRadius: 10, border: "none", background: "rgba(255,255,255,0.15)", color: "#fff", fontSize: 16, cursor: "pointer", flexShrink: 0 }}>{loading ? "…" : "→"}</button>
           </div>
-         {(answer || loading) && (
+          {(answer || loading) && (
             <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 14, padding: "12px 14px" }}>
               {loading
                 ? <div style={{ display: "flex", gap: 4 }}>{[0, 1, 2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.5)", animation: "bounce 1.2s ease-in-out " + (i * 0.2) + "s infinite" }} />)}</div>
@@ -467,6 +542,11 @@ function BrainPanel({ age, childName }) {
               }
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Toast({ data, onClose }) {
   return (
@@ -651,7 +731,7 @@ function Today({ user, onReset }) {
   );
 }
 
- function BatiApp() {
+function BatiApp() {
   const [screen, setScreen] = useState("loading");
   const [user, setUser] = useState(null);
   useEffect(() => {
